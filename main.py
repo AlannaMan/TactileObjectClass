@@ -15,7 +15,6 @@ state = 'coll'
 RESULTS = []
 TRAIN_MODE = False
 
-
 class XArmEnv(gym.Env):
     def __init__(self):
         super().__init__()
