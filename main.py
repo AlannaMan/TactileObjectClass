@@ -1,3 +1,5 @@
+import sys
+
 import gymnasium as gym
 import pandas as pd
 from gymnasium import spaces
@@ -13,7 +15,7 @@ import matplotlib.pyplot as plt
 state = 'coll'
 RESULTS = []
 TRAIN_MODE = False
-TEST_MODE = False  # not TRAIN_MODE
+TEST_MODE = False#not TRAIN_MODE
 
 
 class XArmEnv(gym.Env):
@@ -34,7 +36,7 @@ class XArmEnv(gym.Env):
         # Load the robot
         self.robot = p.loadURDF("xarm/xarm6_robot.urdf")
         initial_joint_positions = p.calculateInverseKinematics(self.robot, 6, np.array(
-            [0.75, 0.0, 0.25]))  # Define your initial joint positions
+            [0.3, 0.0, 0.25]))  # Define your initial joint positions
         for i, joint_position in enumerate(initial_joint_positions):
             p.resetJointState(self.robot, i + 1, joint_position)
 
@@ -56,7 +58,9 @@ class XArmEnv(gym.Env):
         self.observation_space = spaces.Box(low=-10.0, high=10.0, shape=(9,), dtype=np.float32)
 
     def step(self, action):
+
         global state
+        print(state)
         rew = 0
         # print("****** STEP")
         # print(state)
@@ -88,6 +92,7 @@ class XArmEnv(gym.Env):
             if len(collision) > 0:
                 if collision[0][6] in RESULTS:
                     rew -= 1
+                    state = "coll"
                 else:
                     rew = 5
                     state = "coll"
@@ -106,10 +111,15 @@ class XArmEnv(gym.Env):
             rew -= 3
             # print("COLLISION BAD")
 
+        if len(RESULTS) > 0:
+            curr_loc = np.array(p.getLinkState(self.robot, 6)[4])
+            dist = np.linalg.norm(np.array(RESULTS[-1]) - np.array(curr_loc))
+            rew -= dist
+
         # Optionally add additional info
         info = {'distance': 7}
         observation = self._get_initial_observation
-
+        print(rew)
         return observation, rew, done, False, info
 
     def reset(self, **kwargs):
@@ -172,7 +182,7 @@ if TRAIN_MODE:
 
 if TEST_MODE:
     # Load the trained model
-    model = PPO.load("/Users/alannamanfredini/Documents/* Robot Learning/RL_mod_diff_spot")
+    model = PPO.load("/Users/alannamanfredini/Documents/* Robot Learning/RL_mod_1")
 
     env = XArmEnv()
 
@@ -193,8 +203,10 @@ if TEST_MODE:
         print(f"Episode: {episode + 1}, Total Reward: {total_reward}")
     env.close()
 
-data = pd.read_csv("/Users/alannamanfredini/Documents/* Robot Learning/Results.csv")
+#sys.exit()
 
+data = pd.read_csv("/Users/alannamanfredini/Documents/* Robot Learning/Results.csv")
+print(data.head(10))
 
 fig = plt.figure()
 ax = plt.axes(projection='3d')
